@@ -1,7 +1,7 @@
 const path = require('path')
 const express = require('express')
 const hbs = require("hbs");
-const geocode = require('./utils/geocode')
+const { geocode, reverseGeocode } = require('./utils/geocode')
 const forecast = require('./utils/forecast')
 
 const app = express()
@@ -21,7 +21,7 @@ hbs.registerPartials(partialsPath)
 app.use(express.static(publicDirPath))
 
 // App routers
-app.get('',(req, res) => {
+app.get('', (req, res) => {
     res.render('index', {
         title: 'Weather',
         name: 'Antonios Kiosses'
@@ -65,6 +65,33 @@ app.get('/weather', (req, res) => {
                 forecast: forecastData
             })
         })
+    })
+})
+
+app.get('/myWeather', (req, res) => {
+
+    const latitude = req.query.latitude
+    const longitude = req.query.longitude
+
+    if(!latitude && !longitude){
+        return res.send({
+            error: "Something went wrong, refresh the page and try again"
+        });
+    }
+
+    reverseGeocode(latitude, longitude, (error, { location }) => {
+        if(error){
+            return res.send(error);
+        }
+        forecast(latitude, longitude, (error, forecastData) => {
+            if(error){
+                return res.send(error);
+            }
+            res.send({
+                forecast: forecastData,
+                location: location
+            });
+        });
     })
 })
 
